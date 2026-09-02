@@ -5146,7 +5146,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		for _, objs in classList do
 			if entries[objs[1]].deferLast then
 				deferredBuckets = deferredBuckets or {}
-				table.insert(deferredBuckets, objs)
+				deferredBuckets[#deferredBuckets + 1] = objs
 			else
 				encode_class_bucket(objs)
 			end
@@ -5249,8 +5249,12 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 					continue -- filtered out by collect
 				end
 
-				savebuffer[savebuffer_size] = ReturnItem(entry.tag, instance)
-				savebuffer_size += 1
+				savebuffer[savebuffer_size] = '<Item class="'
+				savebuffer[savebuffer_size + 1] = entry.tag
+				savebuffer[savebuffer_size + 2] = '" referent="'
+				savebuffer[savebuffer_size + 3] = getRef(instance)
+				savebuffer[savebuffer_size + 4] = '"><Properties>'
+				savebuffer_size += 5
 
 				if entry.propsOnly then
 					for propName, value in entry.override.Properties do
@@ -5258,14 +5262,22 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 							value = value() -- Deferred Source (README): resolved at encode time
 						end
 						if value ~= nil then
+							local ptag, pvalue
 							if propName == "Source" then
-								savebuffer[savebuffer_size] =
-									ReturnProperty("ProtectedString", propName, XML_Encoders.ProtectedString(value))
+								ptag, pvalue = "ProtectedString", XML_Encoders.ProtectedString(value)
 							else
-								savebuffer[savebuffer_size] =
-									ReturnProperty("string", propName, XML_Encoders.string(value))
+								ptag, pvalue = "string", XML_Encoders.string(value)
 							end
-							savebuffer_size += 1
+							savebuffer[savebuffer_size] = "<"
+							savebuffer[savebuffer_size + 1] = ptag
+							savebuffer[savebuffer_size + 2] = ' name="'
+							savebuffer[savebuffer_size + 3] = propName
+							savebuffer[savebuffer_size + 4] = '">'
+							savebuffer[savebuffer_size + 5] = pvalue
+							savebuffer[savebuffer_size + 6] = "</"
+							savebuffer[savebuffer_size + 7] = ptag
+							savebuffer[savebuffer_size + 8] = ">"
+							savebuffer_size += 9
 						end
 					end
 				elseif not (IgnorePropertiesOfNotScriptsOnScriptsMode and not isLuaSourceContainer(instance)) then
@@ -5364,8 +5376,16 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 						end
 
 						if tag then
-							savebuffer[savebuffer_size] = ReturnProperty(tag, PropertyName, value)
-							savebuffer_size += 1
+							savebuffer[savebuffer_size] = "<"
+							savebuffer[savebuffer_size + 1] = tag
+							savebuffer[savebuffer_size + 2] = ' name="'
+							savebuffer[savebuffer_size + 3] = PropertyName
+							savebuffer[savebuffer_size + 4] = '">'
+							savebuffer[savebuffer_size + 5] = value
+							savebuffer[savebuffer_size + 6] = "</"
+							savebuffer[savebuffer_size + 7] = tag
+							savebuffer[savebuffer_size + 8] = ">"
+							savebuffer_size += 9
 						else
 							warn("UNSUPPORTED XML TYPE (OPEN A GITHUB ISSUE): ", PropertyName, ValueType)
 						end
@@ -5404,11 +5424,17 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 
 		do
 			local tmp = { "<SharedStrings>" }
+			local tmp_n = 1
 			for value, id in sharedStrings do
-				table.insert(tmp, '<SharedString md5="' .. id .. '">' .. value .. "</SharedString>")
+				tmp[tmp_n + 1] = '<SharedString md5="'
+				tmp[tmp_n + 2] = id
+				tmp[tmp_n + 3] = '">'
+				tmp[tmp_n + 4] = value
+				tmp[tmp_n + 5] = "</SharedString>"
+				tmp_n += 5
 			end
 
-			if 1 < #tmp then
+			if 1 < tmp_n then
 				savebuffer[savebuffer_size] = table.concat(tmp)
 				savebuffer_size += 1
 				savebuffer[savebuffer_size] = "</SharedStrings>"
