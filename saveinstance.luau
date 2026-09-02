@@ -3,8 +3,6 @@
 --!divine-intellect
 -- https://discord.gg/wx4ThpAsmw
 
-print("fart")
-
 local function string_find(s, pattern, init)
 	return string.find(s, pattern, init, true)
 end
