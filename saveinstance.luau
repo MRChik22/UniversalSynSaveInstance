@@ -53,25 +53,160 @@ local service = setmetatable({}, {
 
 local StreamBuffer
 do
-	local filename = "StreamBuffer"
+	-- I am NOT doing this shit
+	local StreamBufferA = {}
+	StreamBufferA.__index = StreamBufferA
 
-	StreamBuffer = loadstring(
-		game:HttpGet("https://raw.githubusercontent.com/luau/SomeHub/main/" .. filename .. ".luau", true),
-		filename
-	)()
+	export type StreamBuffer = typeof(setmetatable({} :: {
+		buf: buffer,
+		offset: number,
+		size: number,
+	}, StreamBufferA))
+
+	function StreamBufferA.new(sizeOrBuffer: number | buffer): StreamBuffer
+		local buf = if type(sizeOrBuffer) == "number"
+			then buffer.create(sizeOrBuffer)
+			else sizeOrBuffer
+
+		return setmetatable({
+			buf = buf,
+			offset = 0,
+			size = buffer.len(buf),
+		}, StreamBufferA)
+	end
+
+	-- unsigned integers
+	function StreamBufferA.writeu8(self: StreamBuffer, value: number)
+		buffer.writeu8(self.buf, self.offset, value)
+		self.offset += 1
+	end
+
+	function StreamBufferA.writeu16(self: StreamBuffer, value: number)
+		buffer.writeu16(self.buf, self.offset, value)
+		self.offset += 2
+	end
+
+	function StreamBufferA.writeu32(self: StreamBuffer, value: number)
+		buffer.writeu32(self.buf, self.offset, value)
+		self.offset += 4
+	end
+
+	-- signed integers
+	function StreamBufferA.writei8(self: StreamBuffer, value: number)
+		buffer.writei8(self.buf, self.offset, value)
+		self.offset += 1
+	end
+
+	function StreamBufferA.writei16(self: StreamBuffer, value: number)
+		buffer.writei16(self.buf, self.offset, value)
+		self.offset += 2
+	end
+
+	function StreamBufferA.writei32(self: StreamBuffer, value: number)
+		buffer.writei32(self.buf, self.offset, value)
+		self.offset += 4
+	end
+
+	-- floating-point numbers
+	function StreamBufferA.writef32(self: StreamBuffer, value: number)
+		buffer.writef32(self.buf, self.offset, value)
+		self.offset += 4
+	end
+
+	function StreamBufferA.writef64(self: StreamBuffer, value: number)
+		buffer.writef64(self.buf, self.offset, value)
+		self.offset += 8
+	end
+
+	-- strings
+	function StreamBufferA.writestring(self: StreamBuffer, value: string, count: number?)
+		local len = count or #value
+		buffer.writestring(self.buf, self.offset, value, len)
+		self.offset += len
+	end
+
+	-- read equivalents (useful when deserializing on the receiving end)
+	function StreamBufferA.readu8(self: StreamBuffer): number
+		local val = buffer.readu8(self.buf, self.offset)
+		self.offset += 1
+		return val
+	end
+
+	function StreamBufferA.readu16(self: StreamBuffer): number
+		local val = buffer.readu16(self.buf, self.offset)
+		self.offset += 2
+		return val
+	end
+
+	function StreamBufferA.readu32(self: StreamBuffer): number
+		local val = buffer.readu32(self.buf, self.offset)
+		self.offset += 4
+		return val
+	end
+
+	function StreamBufferA.readi8(self: StreamBuffer): number
+		local val = buffer.readi8(self.buf, self.offset)
+		self.offset += 1
+		return val
+	end
+
+	function StreamBufferA.readi16(self: StreamBuffer): number
+		local val = buffer.readi16(self.buf, self.offset)
+		self.offset += 2
+		return val
+	end
+
+	function StreamBufferA.readi32(self: StreamBuffer): number
+		local val = buffer.readi32(self.buf, self.offset)
+		self.offset += 4
+		return val
+	end
+
+	function StreamBufferA.readf32(self: StreamBuffer): number
+		local val = buffer.readf32(self.buf, self.offset)
+		self.offset += 4
+		return val
+	end
+
+	function StreamBufferA.readf64(self: StreamBuffer): number
+		local val = buffer.readf64(self.buf, self.offset)
+		self.offset += 8
+		return val
+	end
+
+	function StreamBufferA.readstring(self: StreamBuffer, count: number): string
+		local val = buffer.readstring(self.buf, self.offset, count)
+		self.offset += count
+		return val
+	end
+	
+	StreamBuffer = StreamBufferA
 end
 
 local global_container
 do
-	local filename = "UniversalMethodFinder"
+	global_container = {
+		setrbxclipboard = setrbxclipboard,
+		gethiddenproperty = gethiddenproperty,
+		getscriptbytecode = getscriptbytecode,
+		base64encode = base64encode,
+		base64decode = base64decode,
+		getnilinstances = getnilinstances,
+		gethui = gethui,
+		protectgui = protectgui,
+	}
+	
+	--[[local filename = "UniversalMethodFinder"
 
 	local finder
 	finder, global_container = loadstring(
 		game:HttpGet("https://raw.githubusercontent.com/luau/SomeHub/main/" .. filename .. ".luau", true),
 		filename
-	)()
+	)()]]
+	
+	-- wtf does finder do??
 
-	finder({
+	--[[finder({
 		-- request = 'string.find(...,"request",nil,true) and not string.find(...,"internal",nil,true)',
 		base64encode = 'local a={...}local b=a[1]local function c(a,b)return string.find(a,b,nil,true)end;return c(b,"encode")and(c(b,"base64")or c(string.lower(tostring(a[2])),"base64"))',
 		base64decode = 'local a={...}local b=a[1]local function c(a,b)return string.find(a,b,nil,true)end;return c(b,"decode")and(c(b,"base64")or c(string.lower(tostring(a[2])),"base64"))',
@@ -86,7 +221,7 @@ do
 		protectgui = 'string.find(...,"protect",nil,true) and string.find(...,"ui",nil,true) and not string.find(...,"un",nil,true)',
 		setrbxclipboard = 'string.find(...,"set",nil,true) and string.find(...,"rbx",nil,true) and string.find(...,"clipboard",nil,true)',
 		-- setthreadidentity = 'string.find(...,"identity",nil,true) and string.find(...,"set",nil,true)',
-	}, true, 10)
+	}, true, 10)]]
 end
 
 local identify_executor = identifyexecutor or getexecutorname or whatexecutor
@@ -143,14 +278,14 @@ end
 local FULL_VERSION
 
 if not pcall(function()
-	FULL_VERSION = version()
-end) then
-	if not pcall(function()
-		FULL_VERSION = settings():GetService("DebugSettings").RobloxVersion
+		FULL_VERSION = version()
 	end) then
-		if not pcall(function()
-			FULL_VERSION = service.RunService:GetRobloxVersion()
+	if not pcall(function()
+			FULL_VERSION = settings():GetService("DebugSettings").RobloxVersion
 		end) then
+		if not pcall(function()
+				FULL_VERSION = service.RunService:GetRobloxVersion()
+			end) then
 			FULL_VERSION = "UNKNOWN"
 		end
 	end
@@ -1447,7 +1582,7 @@ XML_Encoders = {
 			.. "</R21><R22>"
 			.. R22
 			.. "</R22>",
-			"CoordinateFrame"
+		"CoordinateFrame"
 	end,
 
 	Color3 = function(raw)
@@ -1536,7 +1671,7 @@ XML_Encoders = {
 		local CustomPhysics = "<CustomPhysics>" .. XML_Encoders.bool(raw and true or false) .. "</CustomPhysics>"
 
 		return raw
-				and CustomPhysics .. "<Density>" .. raw.Density .. "</Density><Friction>" .. raw.Friction .. "</Friction><Elasticity>" .. raw.Elasticity .. "</Elasticity><FrictionWeight>" .. raw.FrictionWeight .. "</FrictionWeight><ElasticityWeight>" .. raw.ElasticityWeight .. "</ElasticityWeight><AcousticAbsorption>" .. raw.AcousticAbsorption .. "</AcousticAbsorption>"
+			and CustomPhysics .. "<Density>" .. raw.Density .. "</Density><Friction>" .. raw.Friction .. "</Friction><Elasticity>" .. raw.Elasticity .. "</Elasticity><FrictionWeight>" .. raw.FrictionWeight .. "</FrictionWeight><ElasticityWeight>" .. raw.ElasticityWeight .. "</ElasticityWeight><AcousticAbsorption>" .. raw.AcousticAbsorption .. "</AcousticAbsorption>"
 			or CustomPhysics
 	end,
 	ProtectedString = function(raw)
@@ -3358,7 +3493,7 @@ do
 									preferredDescriptorProp == nil
 									or (
 										preferredDescriptorProp.MemberType == "Property"
-										and ValueType_Name ~= preferredDescriptorProp.ValueType
+											and ValueType_Name ~= preferredDescriptorProp.ValueType
 									)
 								then -- For ex. (if they were notscriptable) CollisionGroupId (int) -> CollisionGroup (string)
 									PreferredDescriptorName = nil
@@ -3387,26 +3522,26 @@ do
 							local accessFunc = PreferredDescriptorName
 								and (
 									preferredDescriptorProp.MemberType == "Property"
-										and function(instance)
-											return instance[PreferredDescriptorName]
-										end
+									and function(instance)
+										return instance[PreferredDescriptorName]
+									end
 									or function(instance) -- Assume MemberType is "Function"
 										return instance[PreferredDescriptorName](instance)
 									end
 								)
 
 							Property.Fallback = NotScriptableFix
-									and (type(NotScriptableFix) == "function" and NotScriptableFix or accessFunc and function(
-										instance
-									)
-										local o, r = pcall(accessFunc, instance)
-										if o then
-											return r
-										end
-										return instance[NotScriptableFix]
-									end or function(instance)
-										return instance[NotScriptableFix]
-									end)
+								and (type(NotScriptableFix) == "function" and NotScriptableFix or accessFunc and function(
+									instance
+								)
+								local o, r = pcall(accessFunc, instance)
+								if o then
+									return r
+								end
+								return instance[NotScriptableFix]
+							end or function(instance)
+								return instance[NotScriptableFix]
+							end)
 								or accessFunc
 
 							ClassProperties[ClassProperties_size] = Property
@@ -4521,7 +4656,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		end
 		return result == "can't get value"
 			or type(result) == "string"
-				and (category == "Enum" or string_find(result, "Unable to get property " .. propertyName))
+			and (category == "Enum" or string_find(result, "Unable to get property " .. propertyName))
 	end
 
 	local GHP_STATE_FILE = USSI_FOLDER .. "GHP_STATE.json"
@@ -4973,9 +5108,9 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 	end
 	local function emitBinary(ctx)
 		local compress = CompressionMode == "zstd"
-				and function(raw)
-					return zstdcompress(raw, CompressionLevel)
-				end
+			and function(raw)
+				return zstdcompress(raw, CompressionLevel)
+			end
 			or CompressionMode == "lz4" and lz4compress
 			or nil
 
