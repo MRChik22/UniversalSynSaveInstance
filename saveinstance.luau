@@ -4789,7 +4789,8 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 	local function readProperty(instance, property)
 		local raw = __BREAK
 
-		local PropertyName, Special, Category, ValueType, Optional =
+		local success, error = pcall(function()
+			local PropertyName, Special, Category, ValueType, Optional =
 			property.Name, property.Special, property.Category, property.ValueType, property.Optional
 
 		local InstanceOverride = InstancesOverrides[instance]
@@ -4889,8 +4890,13 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 				__DEBUG_MODE("Fix Failed", PropertyName, result)
 			end
 		end
-
-		return __BREAK
+		end)
+		
+		if success then
+			return success
+		else
+			return __BREAK
+		end
 	end
 
 	local function ReturnItem(className, instance)
