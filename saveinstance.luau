@@ -54,7 +54,6 @@ local service = setmetatable({}, {
 local StreamBuffer
 do
 	-- yeah no
-	-- man these are so not ai generated please catperson AH~!
 	
 	local StreamBufferA = {}
 
@@ -71,7 +70,7 @@ do
 		size: number,
 	}, StreamBufferA))
 
-	local function grow(self, required) -- noticed sebqq had the same issue, this is so not ai generated
+	local function grow(self, required) -- noticed sebqq had the same issue
 		if required > self.size then -- NOOOO NOT THE SPANKING!!
 			local newSize = math.max(required, self.size * 2 + 64)
 			local newBuf = buffer.create(newSize)
@@ -93,7 +92,7 @@ do
 		}, StreamBufferA)
 	end
 
-	function StreamBufferA.fill(self: StreamBuffer, value: number, count: number?) -- fix fix these streambuffers are totally not ai generated wink wink
+	function StreamBufferA.fill(self: StreamBuffer, value: number, count: number?) -- fixed
 		local len = count or (self.size - self.offset)
 		grow(self, self.offset + len)
 		buffer.fill(self.buf, self.offset, value, len)
@@ -5424,6 +5423,11 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 			'<!-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw --><roblox version="4">'
 
 		local function save_cache()
+			for i = 1, savebuffer_size - 1 do
+				if type(savebuffer[i]) == "boolean" then
+					savebuffer[i] = tostring(savebuffer[i])
+				end
+			end
 			local savestr = table.concat(savebuffer)
 
 			local savestr_len = #savestr
