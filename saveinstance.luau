@@ -4787,78 +4787,83 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 	end
 
 	local function readProperty(instance, property)
-		local raw = __BREAK
+		local ok1, result1 = pcall(function()
+			local raw = __BREAK
 
-		local success, error = pcall(function()
 			local PropertyName, Special, Category, ValueType, Optional =
-			property.Name, property.Special, property.Category, property.ValueType, property.Optional
+				property.Name, property.Special, property.Category, property.ValueType, property.Optional
 
-		local InstanceOverride = InstancesOverrides[instance]
-		if InstanceOverride then
-			local PropertiesOverride = InstanceOverride.Properties
-			if PropertiesOverride then
-				local PropertyOverride = PropertiesOverride[PropertyName]
-				if PropertyOverride ~= nil then
-					return anonymize(PropertyOverride, ValueType)
+			local InstanceOverride = InstancesOverrides[instance]
+			if InstanceOverride then
+				local PropertiesOverride = InstanceOverride.Properties
+				if PropertiesOverride then
+					local PropertyOverride = PropertiesOverride[PropertyName]
+					if PropertyOverride ~= nil then
+						return anonymize(PropertyOverride, ValueType)
+					end
 				end
 			end
-		end
 
-		if ValueType == "ProtectedString" and PropertyName == "Source" and isLuaSourceContainer(instance) then
-			return sourceFor(instance, decompileIgnoreMap[instance])
-		end
+			if ValueType == "ProtectedString" and PropertyName == "Source" and isLuaSourceContainer(instance) then
+				return sourceFor(instance, decompileIgnoreMap[instance])
+			end
 
-		local CanRead = property.CanRead
-		if CanRead ~= false then
-			local GHPKey = (Category == "Enum" or Category == "Class") and Category or ValueType
+			local CanRead = property.CanRead
+			if CanRead ~= false then
+				local GHPKey = (Category == "Enum" or Category == "Class") and Category or ValueType
 
-			if Special then
-				if gethiddenproperty and ghpDatatypeAllowed(GHPKey) then
-					local ok, result = pcall(gethiddenproperty, instance, PropertyName)
+				if Special then
+					if gethiddenproperty and ghpDatatypeAllowed(GHPKey) then
+						local ok, result = pcall(gethiddenproperty, instance, PropertyName)
+						if ok then
+							raw = result
+						end
+
+						local filtered = filterPropVal(raw, PropertyName, Category, Optional)
+						local realFailure = filtered and not (result == nil and nilIsValid(Category, Optional))
+
+						ghpDatatypeReport(GHPKey, ok and not realFailure)
+
+						if filtered then
+							if realFailure then
+								if __DEBUG_MODE then
+									__DEBUG_MODE("Filtered", PropertyName)
+								end
+								property.CanRead = false
+							end
+							raw = __BREAK
+						end
+					end
+				elseif CanRead then
+					raw = instance[PropertyName]
+				else
+					local ok, result = pcall(index, instance, PropertyName)
 					if ok then
 						raw = result
+					elseif gethiddenproperty and ghpDatatypeAllowed(ValueType) then
+						ok, result = pcall(gethiddenproperty, instance, PropertyName)
+						ghpDatatypeReport(ValueType, ok and not filterPropVal(result, PropertyName, Category, Optional))
+						if ok then
+							raw = result
+							property.Special = true
+						end
 					end
 
-					local filtered = filterPropVal(raw, PropertyName, Category, Optional)
-					local realFailure = filtered and not (result == nil and nilIsValid(Category, Optional))
+					property.CanRead = ok
 
-					ghpDatatypeReport(GHPKey, ok and not realFailure)
-
-					if filtered then
-						if realFailure then
-							if __DEBUG_MODE then
-								__DEBUG_MODE("Filtered", PropertyName)
-							end
-							property.CanRead = false
-						end
+					if not ok or filterPropVal(raw, PropertyName, Category, Optional) then
 						raw = __BREAK
 					end
 				end
-			elseif CanRead then
-				raw = instance[PropertyName]
-			else
-				local ok, result = pcall(index, instance, PropertyName)
-				if ok then
-					raw = result
-				elseif gethiddenproperty and ghpDatatypeAllowed(ValueType) then
-					ok, result = pcall(gethiddenproperty, instance, PropertyName)
-					ghpDatatypeReport(ValueType, ok and not filterPropVal(result, PropertyName, Category, Optional))
-					if ok then
-						raw = result
-						property.Special = true
-					end
-				end
 
-				property.CanRead = ok
-
-				if not ok or filterPropVal(raw, PropertyName, Category, Optional) then
-					raw = __BREAK
+				if raw ~= __BREAK then
+					return anonymize(raw, ValueType)
 				end
 			end
-
-			if raw ~= __BREAK then
-				return anonymize(raw, ValueType)
-			end
+		end)
+		
+		if ok1 and result1 ~= nil then
+			return result1
 		end
 
 		-- Fallback chain
@@ -4890,13 +4895,8 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 				__DEBUG_MODE("Fix Failed", PropertyName, result)
 			end
 		end
-		end)
-		
-		if success then
-			return success
-		else
-			return __BREAK
-		end
+
+		return __BREAK
 	end
 
 	local function ReturnItem(className, instance)
